@@ -126,7 +126,7 @@ class DiscreteDataTest(BaseDataTest):
             "credible_intervals",
         ]
         eval_pbbs, eval_loss, credible_intervals = self.eval_simulation(
-            sim_count, seed, min_is_best
+            sim_count, seed, min_is_best, credibility_level
         )
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())

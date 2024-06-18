@@ -125,7 +125,7 @@ class PoissonDataTest(BaseDataTest):
             for i in zip(self.sum_values, self.totals, self.a_priors, self.b_priors)
         ]
         eval_pbbs, eval_loss, credible_intervals = self.eval_simulation(
-            sim_count, seed, min_is_best
+            sim_count, seed, min_is_best, credibility_level
         )
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
