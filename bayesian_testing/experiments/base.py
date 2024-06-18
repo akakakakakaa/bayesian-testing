@@ -1,5 +1,5 @@
-from typing import Tuple
 import warnings
+from typing import Tuple
 
 
 class BaseDataTest:
@@ -18,8 +18,12 @@ class BaseDataTest:
         return [k for k in self.data]
 
     def eval_simulation(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
-    ) -> Tuple[dict, dict]:
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
+    ) -> Tuple[dict, dict, dict]:
         """
         Should be implemented in each individual experiment.
         """
@@ -41,7 +45,9 @@ class BaseDataTest:
         -------
         pbbs : Dictionary with probabilities of being best for all variants in experiment.
         """
-        pbbs, loss = self.eval_simulation(sim_count, seed, min_is_best)
+        pbbs, loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, min_is_best
+        )
 
         return pbbs
 
@@ -61,9 +67,33 @@ class BaseDataTest:
         -------
         loss : Dictionary with expected loss for all variants in experiment.
         """
-        pbbs, loss = self.eval_simulation(sim_count, seed, min_is_best)
+        pbbs, loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, min_is_best
+        )
 
         return loss
+
+    def credible_intervals(
+        self, sim_count: int = 20000, seed: int = None, credibility_level: float = 0.95
+    ) -> dict:
+        """
+        Calculate credible intervals for a current class state.
+
+        Parameters
+        ----------
+        sim_count : Number of simulations to be used for probability estimation.
+        seed : Random seed.
+        credibility_level : Credibility level for credible intervals.
+
+        Returns
+        -------
+        credible_intervals : Dictionary with credible intervals for all variants in experiment.
+        """
+        pbbs, loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, credibility_level=credibility_level
+        )
+
+        return credible_intervals
 
     def delete_variant(self, name: str) -> None:
         """
@@ -76,6 +106,8 @@ class BaseDataTest:
         if not isinstance(name, str):
             raise ValueError("Variant name has to be a string.")
         if name not in self.variant_names:
-            warnings.warn(f"Nothing to be deleted. Variant {name} is not in experiment.")
+            warnings.warn(
+                f"Nothing to be deleted. Variant {name} is not in experiment."
+            )
         else:
             del self.data[name]

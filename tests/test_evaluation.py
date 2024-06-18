@@ -1,15 +1,12 @@
 import numpy as np
 import pytest
 
-from bayesian_testing.metrics import (
-    eval_bernoulli_agg,
-    eval_normal_agg,
-    eval_delta_lognormal_agg,
-    eval_delta_normal_agg,
-    eval_numerical_dirichlet_agg,
-    eval_poisson_agg,
-    eval_exponential_agg,
-)
+from bayesian_testing.metrics import (eval_bernoulli_agg,
+                                      eval_delta_lognormal_agg,
+                                      eval_delta_normal_agg,
+                                      eval_exponential_agg, eval_normal_agg,
+                                      eval_numerical_dirichlet_agg,
+                                      eval_poisson_agg)
 
 PBB_BERNOULLI_AGG_INPUTS = [
     {
@@ -20,7 +17,10 @@ PBB_BERNOULLI_AGG_INPUTS = [
             "seed": 52,
             "min_is_best": False,
         },
-        "expected_output": ([0.04185, 0.92235, 0.0358], [0.0030138, 6.06e-05, 0.0031649]),
+        "expected_output": (
+            [0.04185, 0.92235, 0.0358],
+            [0.0030138, 6.06e-05, 0.0031649],
+        ),
     },
     {
         "input": {
@@ -30,7 +30,10 @@ PBB_BERNOULLI_AGG_INPUTS = [
             "seed": 52,
             "min_is_best": True,
         },
-        "expected_output": ([0.4594, 0.00925, 0.53135], [0.000781, 0.0037342, 0.0006299]),
+        "expected_output": (
+            [0.4594, 0.00925, 0.53135],
+            [0.000781, 0.0037342, 0.0006299],
+        ),
     },
     {
         "input": {
@@ -83,7 +86,10 @@ PBB_NORMAL_AGG_INPUTS = [
             "sim_count": 20000,
             "seed": 52,
         },
-        "expected_output": ([0.43605, 0.19685, 0.3671], [0.0133512, 0.0179947, 0.0137618]),
+        "expected_output": (
+            [0.43605, 0.19685, 0.3671],
+            [0.0133512, 0.0179947, 0.0137618],
+        ),
     },
     {
         "input": {
@@ -150,7 +156,10 @@ PBB_DELTA_LOGNORMAL_AGG_INPUTS = [
             "sim_count": 20000,
             "seed": 52,
         },
-        "expected_output": ([0.00015, 0.03345, 0.9664], [0.2209593, 0.1205541, 0.0008458]),
+        "expected_output": (
+            [0.00015, 0.03345, 0.9664],
+            [0.2209593, 0.1205541, 0.0008458],
+        ),
     },
     {
         "input": {
@@ -210,7 +219,10 @@ PBB_NUMERICAL_DIRICHLET_AGG_INPUTS = [
             "sim_count": 20000,
             "seed": 52,
         },
-        "expected_output": ([0.28205, 0.62335, 0.0946], [0.1999528, 0.0698306, 0.334045]),
+        "expected_output": (
+            [0.28205, 0.62335, 0.0946],
+            [0.1999528, 0.0698306, 0.334045],
+        ),
     },
     {
         "input": {
@@ -241,7 +253,10 @@ PBB_POISSON_AGG_INPUTS = [
             "seed": 52,
             "min_is_best": False,
         },
-        "expected_output": ([0.127, 0.00695, 0.86605], [0.0539495, 0.1042691, 0.0030418]),
+        "expected_output": (
+            [0.127, 0.00695, 0.86605],
+            [0.0539495, 0.1042691, 0.0030418],
+        ),
     },
     {
         "input": {
@@ -251,7 +266,10 @@ PBB_POISSON_AGG_INPUTS = [
             "seed": 52,
             "min_is_best": True,
         },
-        "expected_output": ([0.12775, 0.8656, 0.00665], [0.0532581, 0.0029385, 0.1041658]),
+        "expected_output": (
+            [0.12775, 0.8656, 0.00665],
+            [0.0532581, 0.0029385, 0.1041658],
+        ),
     },
     {
         "input": {
@@ -415,8 +433,12 @@ def test_eval_delta_lognormal_agg(inp):
 
 def test_eval_delta_lognormal_agg_different_runs():
     # two different runs of same input without seed should be different
-    run1 = eval_delta_lognormal_agg([1000, 1000], [100, 100], [10, 10], [20, 20], sim_count=100000)
-    run2 = eval_delta_lognormal_agg([1000, 1000], [100, 100], [10, 10], [20, 20], sim_count=100000)
+    run1 = eval_delta_lognormal_agg(
+        [1000, 1000], [100, 100], [10, 10], [20, 20], sim_count=100000
+    )
+    run2 = eval_delta_lognormal_agg(
+        [1000, 1000], [100, 100], [10, 10], [20, 20], sim_count=100000
+    )
     assert run1 != run2
 
 

@@ -1,6 +1,8 @@
 from numbers import Number
 from typing import List, Tuple
+
 import numpy as np
+
 from bayesian_testing.experiments.base import BaseDataTest
 from bayesian_testing.metrics import eval_delta_normal_agg
 from bayesian_testing.utilities import get_logger
@@ -67,8 +69,12 @@ class DeltaNormalDataTest(BaseDataTest):
         return [self.data[k]["w_prior"] for k in self.data]
 
     def eval_simulation(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
-    ) -> Tuple[dict, dict]:
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
+    ) -> Tuple[dict, dict, dict]:
         """
         Calculate probabilities of being best and expected loss for a current class state.
 
@@ -77,13 +83,15 @@ class DeltaNormalDataTest(BaseDataTest):
         sim_count : Number of simulations to be used for probability estimation.
         seed : Random seed.
         min_is_best : Option to change "being best" to a minimum. Default is maximum.
+        credibility_level : Credibility level for credible intervals.
 
         Returns
         -------
         res_pbbs : Dictionary with probabilities of being best for all variants in experiment.
         res_loss : Dictionary with expected loss for all variants in experiment.
+        credible_intervals : Dictionary with credible intervals for all pairs of variants.
         """
-        pbbs, loss = eval_delta_normal_agg(
+        pbbs, loss, credible_intervals = eval_delta_normal_agg(
             self.totals,
             self.non_zeros,
             self.sum_values,
@@ -97,11 +105,22 @@ class DeltaNormalDataTest(BaseDataTest):
             w_priors=self.w_priors,
             seed=seed,
             min_is_best=min_is_best,
+            credibility_level=credibility_level,
         )
         res_pbbs = dict(zip(self.variant_names, pbbs))
         res_loss = dict(zip(self.variant_names, loss))
+        variant_per_num = {
+            num: self.variant_names[idx]
+            for idx, num in enumerate(
+                sorted(set(num for key in credible_intervals.keys() for num in key))
+            )
+        }
+        credible_intervals = {
+            (variant_per_num[key[0]], variant_per_num[key[1]]): value
+            for key, value in credible_intervals.items()
+        }
 
-        return res_pbbs, res_loss
+        return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
         self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
@@ -130,7 +149,9 @@ class DeltaNormalDataTest(BaseDataTest):
             "expected_loss",
         ]
         avg_values = [round(i[0] / i[1], 5) for i in zip(self.sum_values, self.totals)]
-        avg_pos_values = [round(i[0] / i[1], 5) for i in zip(self.sum_values, self.non_zeros)]
+        avg_pos_values = [
+            round(i[0] / i[1], 5) for i in zip(self.sum_values, self.non_zeros)
+        ]
         eval_pbbs, eval_loss = self.eval_simulation(sim_count, seed, min_is_best)
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
@@ -191,11 +212,17 @@ class DeltaNormalDataTest(BaseDataTest):
         if not isinstance(name, str):
             raise ValueError("Variant name has to be a string.")
         if a_prior_beta <= 0 or b_prior_beta <= 0:
-            raise ValueError("Both [a_prior_beta, b_prior_beta] have to be positive numbers.")
+            raise ValueError(
+                "Both [a_prior_beta, b_prior_beta] have to be positive numbers."
+            )
         if m_prior < 0 or a_prior_ig < 0 or b_prior_ig < 0 or w_prior < 0:
-            raise ValueError("All priors of [m, a_ig, b_ig, w] have to be non-negative numbers.")
+            raise ValueError(
+                "All priors of [m, a_ig, b_ig, w] have to be non-negative numbers."
+            )
         if non_zeros < 0:
-            raise ValueError("Input variable 'non_zeros' is expected to be non-zero integer.")
+            raise ValueError(
+                "Input variable 'non_zeros' is expected to be non-zero integer."
+            )
         if totals < non_zeros:
             raise ValueError("Not possible to have more non_zero numbers that totals!")
 

@@ -1,4 +1,5 @@
 import pytest
+
 from bayesian_testing.experiments import DeltaNormalDataTest
 
 
@@ -25,8 +26,12 @@ def delta_norm_test():
     )
 
     delta_norm.add_variant_data("C", [0, 10.7, -1, 8, 0, -3, 0, -10, 0, 11.22])
-    delta_norm.add_variant_data("C", [0, 10.7, -1, 8, 0, -3, 0, -10, 0, 11.22], replace=False)
-    delta_norm.add_variant_data("C", [0, 10.7, -1, 8, 0, -3, 0, -10, 0, 11.22], replace=True)
+    delta_norm.add_variant_data(
+        "C", [0, 10.7, -1, 8, 0, -3, 0, -10, 0, 11.22], replace=False
+    )
+    delta_norm.add_variant_data(
+        "C", [0, 10.7, -1, 8, 0, -3, 0, -10, 0, 11.22], replace=True
+    )
     delta_norm.delete_variant("C")
     return delta_norm
 

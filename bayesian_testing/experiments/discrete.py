@@ -1,5 +1,6 @@
 from numbers import Number
 from typing import List, Tuple, Union
+
 import numpy as np
 
 from bayesian_testing.experiments.base import BaseDataTest
@@ -49,8 +50,12 @@ class DiscreteDataTest(BaseDataTest):
         return res
 
     def eval_simulation(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
-    ) -> Tuple[dict, dict]:
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
+    ) -> Tuple[dict, dict, dict]:
         """
         Calculate probabilities of being best and expected loss for a current class state.
 
@@ -59,19 +64,37 @@ class DiscreteDataTest(BaseDataTest):
         sim_count : Number of simulations to be used for probability estimation.
         seed : Random seed.
         min_is_best : Option to change "being best" to a minimum. Default is maximum.
+        credibility_level : Credibility level for credible intervals.
 
         Returns
         -------
         res_pbbs : Dictionary with probabilities of being best for all variants in experiment.
         res_loss : Dictionary with expected loss for all variants in experiment.
+        credible_intervals : Dictionary with credible intervals for all pairs of variants.
         """
-        pbbs, loss = eval_numerical_dirichlet_agg(
-            self.states, self.concentrations, self.prior_alphas, sim_count, seed, min_is_best
+        pbbs, loss, credible_intervals = eval_numerical_dirichlet_agg(
+            self.states,
+            self.concentrations,
+            self.prior_alphas,
+            sim_count,
+            seed,
+            min_is_best,
+            credibility_level,
         )
         res_pbbs = dict(zip(self.variant_names, pbbs))
         res_loss = dict(zip(self.variant_names, loss))
+        variant_per_num = {
+            num: self.variant_names[idx]
+            for idx, num in enumerate(
+                sorted(set(num for key in credible_intervals.keys() for num in key))
+            )
+        }
+        credible_intervals = {
+            (variant_per_num[key[0]], variant_per_num[key[1]]): value
+            for key, value in credible_intervals.items()
+        }
 
-        return res_pbbs, res_loss
+        return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
         self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
@@ -89,7 +112,13 @@ class DiscreteDataTest(BaseDataTest):
         -------
         res : List of dictionaries with results per variant.
         """
-        keys = ["variant", "concentration", "average_value", "prob_being_best", "expected_loss"]
+        keys = [
+            "variant",
+            "concentration",
+            "average_value",
+            "prob_being_best",
+            "expected_loss",
+        ]
         eval_pbbs, eval_loss = self.eval_simulation(sim_count, seed, min_is_best)
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
@@ -139,7 +168,9 @@ class DiscreteDataTest(BaseDataTest):
             )
             raise ValueError(msg)
         if not self.check_if_numerical(concentration):
-            raise ValueError("Concentration parameter has to be a list of integer values.")
+            raise ValueError(
+                "Concentration parameter has to be a list of integer values."
+            )
 
         if not prior:
             prior = [1] * len(self.states)
@@ -189,7 +220,8 @@ class DiscreteDataTest(BaseDataTest):
             raise ValueError("Data of added variant needs to have some observations.")
         if not min([i in self.states for i in data]):
             msg = (
-                "Input data needs to be a list of numbers from possible states: " f"{self.states}."
+                "Input data needs to be a list of numbers from possible states: "
+                f"{self.states}."
             )
             raise ValueError(msg)
 

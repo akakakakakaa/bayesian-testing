@@ -1,16 +1,14 @@
 from numbers import Number
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 
-from bayesian_testing.metrics.posteriors import (
-    beta_posteriors_all,
-    lognormal_posteriors,
-    normal_posteriors,
-    dirichlet_posteriors,
-    pois_gamma_posteriors_all,
-    exp_gamma_posteriors_all,
-)
+from bayesian_testing.metrics.posteriors import (beta_posteriors_all,
+                                                 dirichlet_posteriors,
+                                                 exp_gamma_posteriors_all,
+                                                 lognormal_posteriors,
+                                                 normal_posteriors,
+                                                 pois_gamma_posteriors_all)
 from bayesian_testing.utilities import get_logger
 
 logger = get_logger("bayesian_testing")
@@ -21,7 +19,9 @@ def validate_bernoulli_input(totals: List[int], positives: List[int]) -> None:
     Simple validation for pbb_bernoulli_agg inputs.
     """
     if len(totals) != len(positives):
-        msg = f"Totals ({totals}) and positives ({positives}) needs to have same length!"
+        msg = (
+            f"Totals ({totals}) and positives ({positives}) needs to have same length!"
+        )
         logger.error(msg)
         raise ValueError(msg)
 
@@ -78,6 +78,42 @@ def estimate_expected_loss(
     return res
 
 
+def estimate_credible_interval(
+    data: Union[List[List[Number]], np.ndarray], credibility_level: float = 0.95
+) -> Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]]:
+    """
+    Estimate the credible interval for variants considering simulated data from respective posteriors.
+
+    Parameters
+    ----------
+    data : List of simulated data for each variant.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
+
+    Returns
+    -------
+    lower_bound : Lower bound of the credible interval.
+    upper_bound : Upper bound of the credible interval.
+    """
+
+    credible_intervals = {}
+    for left in range(len(data) - 1):
+        for right in range(left + 1, len(data)):
+            left_sample = data[left]
+            right_sample = data[right]
+            lift = right_sample - left_sample
+            np_credibility_level = credibility_level * 100
+            credible_interval = np.percentile(
+                lift,
+                [
+                    (100 - np_credibility_level) / 2,
+                    np_credibility_level + (100 - np_credibility_level) / 2,
+                ],
+            )
+            credible_intervals[(left, right)] = credible_interval
+
+    return credible_intervals
+
+
 def eval_bernoulli_agg(
     totals: List[int],
     positives: List[int],
@@ -86,7 +122,12 @@ def eval_bernoulli_agg(
     sim_count: int = 20000,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for Beta-Bernoulli
     aggregated data per variant.
@@ -100,6 +141,7 @@ def eval_bernoulli_agg(
     b_priors_beta : List of prior beta parameters of Beta distributions for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -123,8 +165,9 @@ def eval_bernoulli_agg(
 
     res_pbbs = estimate_probabilities(beta_samples, min_is_best)
     res_loss = estimate_expected_loss(beta_samples, min_is_best)
+    credible_intervals = estimate_credible_interval(beta_samples, credibility_level)
 
-    return res_pbbs, res_loss
+    return res_pbbs, res_loss, credible_intervals
 
 
 def eval_normal_agg(
@@ -138,7 +181,12 @@ def eval_normal_agg(
     w_priors: List[Number] = None,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for Normal
     aggregated data per variant.
@@ -155,6 +203,7 @@ def eval_normal_agg(
     w_priors : List of prior effective sample sizes for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -197,8 +246,9 @@ def eval_normal_agg(
 
     res_pbbs = estimate_probabilities(normal_samples, min_is_best)
     res_loss = estimate_expected_loss(normal_samples, min_is_best)
+    credible_intervals = estimate_credible_interval(normal_samples, credibility_level)
 
-    return res_pbbs, res_loss
+    return res_pbbs, res_loss, credible_intervals
 
 
 def eval_delta_lognormal_agg(
@@ -215,7 +265,12 @@ def eval_delta_lognormal_agg(
     w_priors: List[Number] = None,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for Delta-Lognormal
     aggregated data per variant. For that reason, the method works with both totals and non_zeros.
@@ -235,6 +290,7 @@ def eval_delta_lognormal_agg(
     w_priors : List of prior effective sample sizes for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -292,8 +348,11 @@ def eval_delta_lognormal_agg(
 
         res_pbbs = estimate_probabilities(combined_samples, min_is_best)
         res_loss = estimate_expected_loss(combined_samples, min_is_best)
+        credible_intervals = estimate_credible_interval(
+            combined_samples, credibility_level
+        )
 
-        return res_pbbs, res_loss
+        return res_pbbs, res_loss, credible_intervals
 
 
 def eval_numerical_dirichlet_agg(
@@ -303,6 +362,7 @@ def eval_numerical_dirichlet_agg(
     sim_count: int = 20000,
     seed: int = None,
     min_is_best: bool = False,
+    credibility_level: float = 0.95,
 ):
     """
     Method estimating probabilities of being best and expected loss for Dirichlet-multinomial
@@ -317,6 +377,7 @@ def eval_numerical_dirichlet_agg(
     sim_count : Number of simulations.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -344,8 +405,9 @@ def eval_numerical_dirichlet_agg(
 
     res_pbbs = estimate_probabilities(means_samples, min_is_best)
     res_loss = estimate_expected_loss(means_samples, min_is_best)
+    credible_intervals = estimate_credible_interval(means_samples, credibility_level)
 
-    return res_pbbs, res_loss
+    return res_pbbs, res_loss, credible_intervals
 
 
 def eval_poisson_agg(
@@ -356,7 +418,12 @@ def eval_poisson_agg(
     sim_count: int = 20000,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for
     Poisson aggregated data per variant.
@@ -370,6 +437,7 @@ def eval_poisson_agg(
     b_priors_gamma : List of prior beta parameters (rates) of Gamma distributions for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -392,8 +460,9 @@ def eval_poisson_agg(
 
     res_pbbs = estimate_probabilities(gamma_samples, min_is_best)
     res_loss = estimate_expected_loss(gamma_samples, min_is_best)
+    credible_intervals = estimate_credible_interval(gamma_samples, credibility_level)
 
-    return res_pbbs, res_loss
+    return res_pbbs, res_loss, credible_intervals
 
 
 def eval_delta_normal_agg(
@@ -410,7 +479,12 @@ def eval_delta_normal_agg(
     w_priors: List[Number] = None,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for Delta-Normal
     aggregated data per variant. For that reason, the method works with both totals and non_zeros.
@@ -430,6 +504,7 @@ def eval_delta_normal_agg(
     w_priors : List of prior effective sample sizes for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
     Returns
     -------
     res_pbbs : List of probabilities of being best for each variant.
@@ -486,8 +561,11 @@ def eval_delta_normal_agg(
 
         res_pbbs = estimate_probabilities(combined_samples, min_is_best)
         res_loss = estimate_expected_loss(combined_samples, min_is_best)
+        credible_intervals = estimate_credible_interval(
+            combined_samples, credibility_level
+        )
 
-        return res_pbbs, res_loss
+        return res_pbbs, res_loss, credible_intervals
 
 
 def eval_exponential_agg(
@@ -498,7 +576,12 @@ def eval_exponential_agg(
     sim_count: int = 20000,
     seed: int = None,
     min_is_best: bool = False,
-) -> Tuple[List[float], List[float]]:
+    credibility_level: float = 0.95,
+) -> Tuple[
+    List[float],
+    List[float],
+    Dict[Tuple[Number, Number], Union[Tuple[Number, Number], np.ndarray]],
+]:
     """
     Method estimating probabilities of being best and expected loss for
     Exponential aggregated data per variant.
@@ -512,6 +595,7 @@ def eval_exponential_agg(
     b_priors_gamma : List of prior beta parameters (rates) of Gamma distributions for each variant.
     seed : Random seed.
     min_is_best : Option to change "being best" to a minimum. Default is maximum.
+    credibility_level : Desired credibility level for the interval (default is 0.95).
 
     Returns
     -------
@@ -537,17 +621,23 @@ def eval_exponential_agg(
     # Reversing also expected loss for the same reason (to see the loss on a scale, not on a rate).
     res_loss_rate = estimate_expected_loss(gamma_samples, not min_is_best)
     post_mean_rate = [
-        (i[2] + i[0]) / (i[3] + i[1]) for i in zip(totals, sums, a_priors_gamma, b_priors_gamma)
+        (i[2] + i[0]) / (i[3] + i[1])
+        for i in zip(totals, sums, a_priors_gamma, b_priors_gamma)
     ]
 
     res_loss_scale = [
         # To convert from a rate to a scale loss:
         #     when "max is best": 1/(mean_rate + loss_rate) - 1/mean_rate
         #     when "min is best": 1/mean_rate - 1/(mean_rate - loss_rate)
-        1 / (i[0] - i[1]) - 1 / i[0] if not min_is_best else 1 / i[0] - 1 / (i[0] + i[1])
+        (
+            1 / (i[0] - i[1]) - 1 / i[0]
+            if not min_is_best
+            else 1 / i[0] - 1 / (i[0] + i[1])
+        )
         for i in zip(post_mean_rate, res_loss_rate)
     ]
 
     res_loss = [round(x, 7) for x in res_loss_scale]
+    credible_intervals = estimate_credible_interval(gamma_samples, credibility_level)
 
-    return res_pbbs, res_loss
+    return res_pbbs, res_loss, credible_intervals

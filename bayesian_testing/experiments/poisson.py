@@ -39,8 +39,12 @@ class PoissonDataTest(BaseDataTest):
         return [self.data[k]["b_prior"] for k in self.data]
 
     def eval_simulation(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
-    ) -> Tuple[dict, dict]:
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
+    ) -> Tuple[dict, dict, dict]:
         """
         Calculate probabilities of being best and expected loss for a current class state.
 
@@ -49,19 +53,38 @@ class PoissonDataTest(BaseDataTest):
         sim_count : Number of simulations to be used for probability estimation.
         seed : Random seed.
         min_is_best : Option to change "being best" to a minimum. Default is maximum.
+        credibility_level : Credibility level for credible intervals.
 
         Returns
         -------
         res_pbbs : Dictionary with probabilities of being best for all variants in experiment.
         res_loss : Dictionary with expected loss for all variants in experiment.
+        credible_intervals : Dictionary with credible intervals for all pairs of variants.
         """
-        pbbs, loss = eval_poisson_agg(
-            self.totals, self.sum_values, self.a_priors, self.b_priors, sim_count, seed, min_is_best
+        pbbs, loss, credible_intervals = eval_poisson_agg(
+            self.totals,
+            self.sum_values,
+            self.a_priors,
+            self.b_priors,
+            sim_count,
+            seed,
+            min_is_best,
+            credibility_level,
         )
         res_pbbs = dict(zip(self.variant_names, pbbs))
         res_loss = dict(zip(self.variant_names, loss))
+        variant_per_num = {
+            num: self.variant_names[idx]
+            for idx, num in enumerate(
+                sorted(set(num for key in credible_intervals.keys() for num in key))
+            )
+        }
+        credible_intervals = {
+            (variant_per_num[key[0]], variant_per_num[key[1]]): value
+            for key, value in credible_intervals.items()
+        }
 
-        return res_pbbs, res_loss
+        return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
         self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
@@ -88,7 +111,9 @@ class PoissonDataTest(BaseDataTest):
             "prob_being_best",
             "expected_loss",
         ]
-        observed_average = [round(i[0] / i[1], 5) for i in zip(self.sum_values, self.totals)]
+        observed_average = [
+            round(i[0] / i[1], 5) for i in zip(self.sum_values, self.totals)
+        ]
         posterior_mean = [
             round((i[2] + i[0]) / (i[3] + i[1]), 5)
             for i in zip(self.sum_values, self.totals, self.a_priors, self.b_priors)
@@ -141,9 +166,13 @@ class PoissonDataTest(BaseDataTest):
         if a_prior <= 0 or b_prior <= 0:
             raise ValueError("Both [a_prior, b_prior] have to be positive numbers.")
         if totals <= 0:
-            raise ValueError("Input variable 'totals' is expected to be positive integer.")
+            raise ValueError(
+                "Input variable 'totals' is expected to be positive integer."
+            )
         if sum_values < 0:
-            raise ValueError("Input variable 'sum_values' is expected to be non-negative number.")
+            raise ValueError(
+                "Input variable 'sum_values' is expected to be non-negative number."
+            )
 
         if name not in self.variant_names:
             self.data[name] = {

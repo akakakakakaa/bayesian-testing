@@ -1,13 +1,11 @@
 import numpy as np
 import pytest
 
-from bayesian_testing.metrics.posteriors import (
-    beta_posteriors_all,
-    lognormal_posteriors,
-    dirichlet_posteriors,
-    pois_gamma_posteriors_all,
-    exp_gamma_posteriors_all,
-)
+from bayesian_testing.metrics.posteriors import (beta_posteriors_all,
+                                                 dirichlet_posteriors,
+                                                 exp_gamma_posteriors_all,
+                                                 lognormal_posteriors,
+                                                 pois_gamma_posteriors_all)
 
 BETA_POSTERIORS_ALL_INPUTS = [
     {

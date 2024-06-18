@@ -7,10 +7,23 @@ from bayesian_testing.experiments import DeltaLognormalDataTest
 def rev_test():
     rev = DeltaLognormalDataTest()
     rev.add_variant_data_agg(
-        "A", 31500, 1580, 30830.02561, 3831.806394737816, 11029.923165846496, a_prior_beta=1
+        "A",
+        31500,
+        1580,
+        30830.02561,
+        3831.806394737816,
+        11029.923165846496,
+        a_prior_beta=1,
     )
     rev.add_variant_data_agg(
-        "B", 32000, 1700, 35203.21689, 4211.72986767986, 12259.51868396913, m_prior=2, w_prior=0.02
+        "B",
+        32000,
+        1700,
+        35203.21689,
+        4211.72986767986,
+        12259.51868396913,
+        m_prior=2,
+        w_prior=0.02,
     )
     rev.add_variant_data_agg(
         "C",
@@ -46,11 +59,19 @@ def test_sum_values(rev_test):
 
 
 def test_sum_logs(rev_test):
-    assert [round(i, 5) for i in rev_test.sum_logs] == [3831.80639, 4211.72987, 4055.96523]
+    assert [round(i, 5) for i in rev_test.sum_logs] == [
+        3831.80639,
+        4211.72987,
+        4055.96523,
+    ]
 
 
 def test_sum_logs_2(rev_test):
-    assert [round(i, 5) for i in rev_test.sum_logs_2] == [11029.92317, 12259.51868, 12357.91186]
+    assert [round(i, 5) for i in rev_test.sum_logs_2] == [
+        11029.92317,
+        12259.51868,
+        12357.91186,
+    ]
 
 
 def test_a_priors_beta(rev_test):

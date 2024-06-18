@@ -6,9 +6,13 @@ from bayesian_testing.experiments import DiscreteDataTest
 @pytest.fixture
 def discrete_test():
     disc = DiscreteDataTest(states=[1, 2, 3, 4, 5, 6])
-    disc.add_variant_data("A", [6, 5, 4, 4, 4, 2, 5, 4, 2, 1, 2, 5, 4, 6, 2, 3, 6, 2, 3, 6])
+    disc.add_variant_data(
+        "A", [6, 5, 4, 4, 4, 2, 5, 4, 2, 1, 2, 5, 4, 6, 2, 3, 6, 2, 3, 6]
+    )
     disc.add_variant_data("B", [4, 6, 3, 6, 4, 6, 6, 1, 4, 1])
-    disc.add_variant_data_agg("C", [10, 10, 10, 10, 10, 10], prior=[100, 100, 100, 100, 100, 100])
+    disc.add_variant_data_agg(
+        "C", [10, 10, 10, 10, 10, 10], prior=[100, 100, 100, 100, 100, 100]
+    )
     disc.add_variant_data_agg("D", [1, 2, 3, 8, 10, 7])
     disc.add_variant_data_agg("D", [1, 2, 3, 8, 10, 6], replace=False)
     disc.add_variant_data_agg("D", [1, 2, 3, 8, 10, 6], replace=True)
