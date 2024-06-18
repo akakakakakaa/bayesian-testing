@@ -104,7 +104,11 @@ class NormalDataTest(BaseDataTest):
         return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
     ) -> List[dict]:
         """
         Evaluation of experiment.
@@ -114,6 +118,7 @@ class NormalDataTest(BaseDataTest):
         sim_count : Number of simulations to be used for probability estimation.
         seed : Random seed.
         min_is_best : Option to change "being best" to a minimum. Default is maximum.
+        credibility_level : Credibility level for credible intervals.
 
         Returns
         -------
@@ -127,13 +132,16 @@ class NormalDataTest(BaseDataTest):
             "posterior_mean",
             "prob_being_best",
             "expected_loss",
+            "credible_intervals",
         ]
         avg_values = [round(i[0] / i[1], 5) for i in zip(self.sum_values, self.totals)]
         posterior_mean = [
             round((i[0] + i[3] * i[2]) / (i[1] + i[3]), 5)
             for i in zip(self.sum_values, self.totals, self.m_priors, self.w_priors)
         ]
-        eval_pbbs, eval_loss = self.eval_simulation(sim_count, seed, min_is_best)
+        eval_pbbs, eval_loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, min_is_best
+        )
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
         data = [
@@ -144,6 +152,7 @@ class NormalDataTest(BaseDataTest):
             posterior_mean,
             pbbs,
             loss,
+            credible_intervals,
         ]
         res = [dict(zip(keys, item)) for item in zip(*data)]
 

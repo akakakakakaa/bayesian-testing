@@ -123,7 +123,11 @@ class DeltaNormalDataTest(BaseDataTest):
         return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
     ) -> List[dict]:
         """
         Evaluation of experiment.
@@ -147,12 +151,15 @@ class DeltaNormalDataTest(BaseDataTest):
             "avg_non_zero_values",
             "prob_being_best",
             "expected_loss",
+            "credible_intervals",
         ]
         avg_values = [round(i[0] / i[1], 5) for i in zip(self.sum_values, self.totals)]
         avg_pos_values = [
             round(i[0] / i[1], 5) for i in zip(self.sum_values, self.non_zeros)
         ]
-        eval_pbbs, eval_loss = self.eval_simulation(sim_count, seed, min_is_best)
+        eval_pbbs, eval_loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, min_is_best
+        )
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
         data = [
@@ -164,6 +171,7 @@ class DeltaNormalDataTest(BaseDataTest):
             avg_pos_values,
             pbbs,
             loss,
+            credible_intervals,
         ]
         res = [dict(zip(keys, item)) for item in zip(*data)]
 

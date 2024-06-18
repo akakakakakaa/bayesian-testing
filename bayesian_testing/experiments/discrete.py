@@ -97,7 +97,11 @@ class DiscreteDataTest(BaseDataTest):
         return res_pbbs, res_loss, credible_intervals
 
     def evaluate(
-        self, sim_count: int = 20000, seed: int = None, min_is_best: bool = False
+        self,
+        sim_count: int = 20000,
+        seed: int = None,
+        min_is_best: bool = False,
+        credibility_level: float = 0.95,
     ) -> List[dict]:
         """
         Evaluation of experiment.
@@ -107,6 +111,7 @@ class DiscreteDataTest(BaseDataTest):
         sim_count : Number of simulations to be used for probability estimation.
         seed : Random seed.
         min_is_best : Option to change "being best" to a minimum. Default is maximum.
+        credibility_level : Credibility level for credible intervals.
 
         Returns
         -------
@@ -118,8 +123,11 @@ class DiscreteDataTest(BaseDataTest):
             "average_value",
             "prob_being_best",
             "expected_loss",
+            "credible_intervals",
         ]
-        eval_pbbs, eval_loss = self.eval_simulation(sim_count, seed, min_is_best)
+        eval_pbbs, eval_loss, credible_intervals = self.eval_simulation(
+            sim_count, seed, min_is_best
+        )
         pbbs = list(eval_pbbs.values())
         loss = list(eval_loss.values())
         average_values = [
@@ -131,6 +139,7 @@ class DiscreteDataTest(BaseDataTest):
             average_values,
             pbbs,
             loss,
+            credible_intervals,
         ]
         res = [dict(zip(keys, item)) for item in zip(*data)]
 
